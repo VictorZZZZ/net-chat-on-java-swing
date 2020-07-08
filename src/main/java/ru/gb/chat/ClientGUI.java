@@ -4,6 +4,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtExceptionHandler {
     private static final int WIDTH = 800;
@@ -74,6 +77,8 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
         add(panelBottom,BorderLayout.SOUTH);
 
         cbAlwaysOnTop.addActionListener(this::actionPerformed);
+        buttonSend.addActionListener(this::actionPerformed);
+        messageField.addActionListener(this::actionPerformed);
 
         setVisible(true);
 
@@ -84,6 +89,14 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
         Object src = e.getSource();
         if(src==cbAlwaysOnTop){
             setAlwaysOnTop(cbAlwaysOnTop.isSelected());
+        } else if(src==buttonSend || src==messageField){
+            if(!messageField.getText().isEmpty()) {
+                DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+                String message = dateFormat.format(new Date()) + " Вы: " + messageField.getText() + "\n";
+                chatArea.append(message);
+                Logger.add(message);
+                messageField.setText("");
+            }
         } else {
             throw new RuntimeException("Unsupported action: " + src.getClass());
         }
