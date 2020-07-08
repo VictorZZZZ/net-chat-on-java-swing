@@ -81,7 +81,12 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
 
     @Override
     public void actionPerformed(ActionEvent e) {
-
+        Object src = e.getSource();
+        if(src==cbAlwaysOnTop){
+            setAlwaysOnTop(cbAlwaysOnTop.isSelected());
+        } else {
+            throw new RuntimeException("Unsupported action: " + src.getClass());
+        }
     }
 
     @Override
