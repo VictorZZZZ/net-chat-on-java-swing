@@ -1,4 +1,4 @@
-package ru.gb.chat;
+package ru.gb.chat.Server;
 
 import javax.swing.*;
 import java.awt.*;
