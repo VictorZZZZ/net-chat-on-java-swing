@@ -84,11 +84,13 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
         add(scrollPaneChatArea, BorderLayout.CENTER);
         add(panelTop, BorderLayout.NORTH);
         add(panelBottom,BorderLayout.SOUTH);
+        panelBottom.setVisible(false);
 
         cbAlwaysOnTop.addActionListener(this::actionPerformed);
         buttonSend.addActionListener(this::actionPerformed);
         messageField.addActionListener(this::actionPerformed);
         buttonLogin.addActionListener(this::actionPerformed);
+        buttonDisconnect.addActionListener(this::actionPerformed);
 
         setVisible(true);
 
@@ -113,7 +115,9 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
                 ioException.printStackTrace();
                 showError(ioException.getMessage());
             }
-        } else {
+        } else if(src==buttonDisconnect){
+            messageSocketThread.sendMessage(MessageSocketThread.DISCONNECT_CLIENT);
+        }else {
             throw new RuntimeException("Unsupported action: " + src.getClass());
         }
     }
@@ -156,6 +160,19 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
 
     private void showError(String errorMsg) {
         JOptionPane.showMessageDialog(this, errorMsg, "Exception!", JOptionPane.ERROR_MESSAGE);
+    }
+
+    @Override
+    public void onSocketStarted() {
+        panelTop.setVisible(false);
+        panelBottom.setVisible(true);
+        putMessageInChat("Server","Соединение с сервером установлено");
+    }
+
+    @Override
+    public void onSocketClosed() {
+        panelTop.setVisible(true);
+        panelBottom.setVisible(false);
     }
 
     @Override

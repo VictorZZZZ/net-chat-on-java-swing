@@ -1,12 +1,12 @@
 package ru.gb.net;
 
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
 
 public class MessageSocketThread extends Thread {
+    public static final String DISCONNECT_CLIENT = "/disconnectClient";
+    public static final String DISCONNECT_SERVER = "/disconnectServer";
     private Socket socket;
     private MessageSocketThreadListener listener;
 
@@ -15,6 +15,9 @@ public class MessageSocketThread extends Thread {
         this.socket = socket;
         this.listener = listener;
         start();
+        if(this.isAlive()){
+            listener.onSocketStarted();
+        }
     }
 
     @Override
@@ -22,10 +25,22 @@ public class MessageSocketThread extends Thread {
         try {
             DataInputStream in = new DataInputStream(socket.getInputStream());
             while (!isInterrupted()){
-                listener.onMessageReceived(in.readUTF());
+                System.out.println("Waiting for message");
+                String msg = in.readUTF();
+                if(msg.equals(DISCONNECT_SERVER)){
+                    interrupt();
+                } else {
+                    listener.onMessageReceived(msg);
+                }
             }
-        } catch (IOException e){
+            if(isInterrupted()){
+                socket.close();
+                listener.onSocketClosed();
+                System.out.println("Сокет закрыт MessageSocketThread stopped!");
+            }
+        } catch (IOException e) {
             listener.onException(e);
+            e.printStackTrace();
         }
     }
 

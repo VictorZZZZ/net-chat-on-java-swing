@@ -34,6 +34,11 @@ public class ServerSocketThread extends Thread {
                 }
                 listener.onClientConnected();
             }
+            if(isInterrupted()){
+                serverSocket.close();
+                System.out.println("ServerSocketThread stopped!");
+                listener.onSocketClosed();
+            }
         } catch (IOException e) {
             listener.onException(e);
         }

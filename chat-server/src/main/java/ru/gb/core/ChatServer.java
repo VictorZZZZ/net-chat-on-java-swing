@@ -8,7 +8,6 @@ import ru.gb.net.ServerSocketThreadListener;
 import java.net.Socket;
 
 public class ChatServer implements ServerSocketThreadListener, MessageSocketThreadListener {
-
     private static ServerSocketThread serverSocketThread;
     private MessageSocketThread messageSocketThread;
 
@@ -28,6 +27,20 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
     }
 
     @Override
+    public void onSocketStarted() {
+        System.out.println("Server Socket thread: Message thread started!");
+    }
+
+    @Override
+    public void onSocketClosed() {
+        if(messageSocketThread!=null && !messageSocketThread.isInterrupted()){
+            messageSocketThread.interrupt();
+            messageSocketThread.sendMessage("Закрытие сокета на стороне сервера!");
+            messageSocketThread.sendMessage(MessageSocketThread.DISCONNECT_SERVER);
+        }
+    }
+
+    @Override
     public void onClientConnected() {
         System.out.println("Client connected");
     }
@@ -39,8 +52,16 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
 
     @Override
     public void onMessageReceived(String msg) {
-        System.out.println(msg);
-        messageSocketThread.sendMessage("echo: " + msg);
+        if(msg.equals(MessageSocketThread.DISCONNECT_CLIENT)){
+            if(messageSocketThread!=null && !messageSocketThread.isInterrupted()){
+                messageSocketThread.interrupt();
+                messageSocketThread.sendMessage("Закрытие сокета на стороне клиента!");
+                messageSocketThread.sendMessage(MessageSocketThread.DISCONNECT_SERVER);
+            }
+        } else {
+            System.out.println(msg);
+            messageSocketThread.sendMessage("echo: " + msg);
+        }
     }
 
     @Override
