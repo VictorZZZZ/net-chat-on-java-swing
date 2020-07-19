@@ -1,5 +1,6 @@
 package ru.gb.gui;
 
+import ru.gb.chat.common.MessageLibrary;
 import ru.gb.net.MessageSocketThread;
 import ru.gb.net.MessageSocketThreadListener;
 
@@ -37,7 +38,7 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
 
     private final JList<String> listUsers = new JList<>();
     private SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
-    private MessageSocketThread messageSocketThread;
+    private MessageSocketThread socketThread;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
@@ -102,15 +103,11 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
         } else if(src==buttonSend || src==messageField){
             sendMessage(loginField.getText(), messageField.getText());
         } else if(src==buttonLogin){
-
+            Socket socket = null;
             try {
-
-                Socket socket = null;
-                System.out.printf("Trying to connect socket %s:%s%n",ipAddressField.getText(),portField.getText());
-                socket = new Socket(ipAddressField.getText(),Integer.parseInt(portField.getText()));
-                messageSocketThread = new MessageSocketThread(this,"Client " + loginField.getText(),socket);
+                socket = new Socket(ipAddressField.getText(), Integer.parseInt(portField.getText()));
+                socketThread = new MessageSocketThread(this, "Client" + loginField.getText(), socket);
             } catch (IOException ioException) {
-                ioException.printStackTrace();
                 showError(ioException.getMessage());
             }
         } else {
@@ -137,7 +134,7 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
         putMessageInChat(user,msg);
         messageField.setText("");
         messageField.grabFocus();
-        messageSocketThread.sendMessage(msg);
+        socketThread.sendMessage(msg);
     }
 
     private void putMessageInChat(String user, String msg) {
@@ -167,5 +164,18 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
     public void onException(Throwable throwable) {
         throwable.printStackTrace();
         showError(throwable.getMessage());
+    }
+
+    @Override
+    public void onSocketReady() {
+        panelTop.setVisible(false);
+        panelBottom.setVisible(true);
+        socketThread.sendMessage(MessageLibrary.getAuthRequestMessage(loginField.getText(), new String(passwordField.getPassword())));
+    }
+
+    @Override
+    public void onSocketClosed() {
+        panelTop.setVisible(true);
+        panelBottom.setVisible(false);
     }
 }

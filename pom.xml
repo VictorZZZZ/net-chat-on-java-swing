@@ -24,6 +24,8 @@
         <module>chat-client</module>
         <module>chat-server</module>
         <module>network</module>
+        <module>chat-library</module>
+        <module>chat-server</module>
     </modules>
 
     <properties>

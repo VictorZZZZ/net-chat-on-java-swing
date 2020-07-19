@@ -1,16 +1,19 @@
 package ru.gb.net;
 
-import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 
 public class MessageSocketThread extends Thread {
+
     private Socket socket;
     private MessageSocketThreadListener listener;
+    private DataInputStream in;
+    private DataOutputStream out;
+    private boolean isClosed = false;
 
-    public MessageSocketThread(MessageSocketThreadListener listener,String name,Socket socket) {
+    public MessageSocketThread (MessageSocketThreadListener listener, String name, Socket socket) {
         super(name);
         this.socket = socket;
         this.listener = listener;
@@ -20,25 +23,53 @@ public class MessageSocketThread extends Thread {
     @Override
     public void run() {
         try {
-            DataInputStream in = new DataInputStream(socket.getInputStream());
-            while (!isInterrupted()){
-                listener.onMessageReceived(in.readUTF());
+            in = new DataInputStream(socket.getInputStream());
+            out = new DataOutputStream(socket.getOutputStream());
+            listener.onSocketReady();
+            while (!isInterrupted()) {
+                if (!isClosed) {
+                    listener.onMessageReceived(in.readUTF());
+                }
             }
-        } catch (IOException e){
+        } catch (IOException e) {
+            close();
+            System.out.println(e);
+        } finally {
+            close();
+        }
+    }
+
+    public void sendMessage(String message) {
+        try {
+            if (!socket.isConnected() || socket.isClosed() || isClosed) {
+                listener.onException(new RuntimeException("Socked closed or not initialized"));
+                return;
+            }
+            if (!isClosed) {
+                out.writeUTF(message);
+            }
+        } catch (IOException e) {
+            close();
             listener.onException(e);
         }
     }
 
-    public void sendMessage(String message){
+    public synchronized void close() {
+        isClosed = true;
+        interrupt();
         try {
-            if(!socket.isConnected() || socket.isClosed()){
-                listener.onException(new RuntimeException("Socked is Closed or not initialized"));
-                return;
+            if (out != null) {
+                out.close();
             }
-            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-            out.writeUTF(message);
+            in.close();
         } catch (IOException e) {
-            listener.onException(e);
+            e.printStackTrace();
         }
+        try {
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        listener.onSocketClosed();
     }
 }

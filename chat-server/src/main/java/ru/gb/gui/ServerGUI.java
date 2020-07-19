@@ -1,13 +1,15 @@
 package ru.gb.gui;
 
 import ru.gb.core.ChatServer;
+import ru.gb.core.ChatServerListener;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class ServerGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler {
+public class ServerGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, ChatServerListener {
+
     private static final int POS_X = 700;
     private static final int POS_Y = 350;
     private static final int WIDTH = 200;
@@ -19,24 +21,24 @@ public class ServerGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
+            @Override
             public void run() {
                 new ServerGUI();
             }
         });
     }
 
-    ServerGUI(){
+    ServerGUI () {
         Thread.setDefaultUncaughtExceptionHandler(this);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setBounds(POS_X, POS_Y, WIDTH, HEIGHT);
         setResizable(false);
         setTitle("Chat Server Admin Console");
 
-        setLayout(new GridLayout(1,2));
-        chatServer = new ChatServer();
+        setLayout(new GridLayout(1, 2));
+        chatServer = new ChatServer(this);
         buttonStart.addActionListener(this);
         buttonStop.addActionListener(this);
-
 
         add(buttonStart);
         add(buttonStop);
@@ -47,12 +49,12 @@ public class ServerGUI extends JFrame implements ActionListener, Thread.Uncaught
     @Override
     public void actionPerformed(ActionEvent e) {
         Object src = e.getSource();
-        if(src == buttonStart){
+        if (src == buttonStart) {
             chatServer.start(8181);
-        } else if(src == buttonStop){
+        } else if (src == buttonStop) {
             chatServer.stop();
-        } else{
-            throw new RuntimeException("Unsupported action:" + src.getClass());
+        } else {
+            throw new RuntimeException("Unsupported action: " + src);
         }
     }
 
@@ -60,9 +62,22 @@ public class ServerGUI extends JFrame implements ActionListener, Thread.Uncaught
     public void uncaughtException(Thread t, Throwable e) {
         e.printStackTrace();
         StackTraceElement[] ste = e.getStackTrace();
+        /*StringBuilder sb = new StringBuilder();
+        sb.append("Exception in \"")
+                .append(t.getName())
+                .append("\": ")
+                .append(e.getClass().getCanonicalName())
+                .append(" ")
+                .append(e.getMessage()) ... */
+
         String msg = String.format("Exception in \"%s\": %s %s%n\t %s",
                 t.getName(), e.getClass().getCanonicalName(), e.getMessage(), ste[0]);
         JOptionPane.showMessageDialog(this, msg, "Exception!", JOptionPane.ERROR_MESSAGE);
         System.exit(1);
+    }
+
+    @Override
+    public void onChatServerMessage(String msg) {
+        System.out.println(msg);
     }
 }
