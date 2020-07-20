@@ -45,6 +45,7 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
     @Override
     public void onSocketAccepted(Socket socket) {
         //this.clientSession = new ClientSessionThread(this, "ClientSessionThread", socket);
+        sessionCounter++;
         clients.add(new ClientSessionThread(this, "ClientSessionThread_"+sessionCounter, socket));
     }
 
