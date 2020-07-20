@@ -14,6 +14,7 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
     private ChatServerListener listener;
     private AuthController authController;
     private Vector<ClientSessionThread> clients = new Vector<>();
+    private int sessionCounter=0;
 
     public ChatServer(ChatServerListener listener) {
         this.listener = listener;
@@ -43,7 +44,8 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
 
     @Override
     public void onSocketAccepted(Socket socket) {
-        this.clientSession = new ClientSessionThread(this, "ClientSessionThread", socket);
+        //this.clientSession = new ClientSessionThread(this, "ClientSessionThread", socket);
+        clients.add(new ClientSessionThread(this, "ClientSessionThread_"+sessionCounter, socket));
     }
 
     @Override
@@ -68,21 +70,39 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
 
     @Override
     public void onMessageReceived(String msg) {
-        if (clientSession.isAuthorized()) {
-            processAuthorizedUserMessage(msg);
-        } else {
-            processUnauthorizedUserMessage(msg);
+        String[] splitted = splitClientUID(msg);
+        String clientGUID=splitted[0];
+        String message = splitted[1];
+        for (ClientSessionThread clientSession:clients) {
+            if (clientSession.isAlive() && clientSession.isAuthorized()) {
+                processAuthorizedUserMessage(clientSession,message);
+            } else {
+                processUnauthorizedUserMessage(clientSession,message);
+            }
         }
-
 
     }
 
-    private void processAuthorizedUserMessage(String msg) {
+    private String[] splitClientUID(String msg){
+        String[] result=new String[2];
+        String[] split = msg.split(":");
+        result[0]=split[0];
+        int index = msg.indexOf(":");
+        String subString;
+        if (index != -1)
+        {
+            subString= msg.substring(index+1 , msg.length());
+            result[1]=subString;
+        }
+        return result;
+    }
+
+    private void processAuthorizedUserMessage(ClientSessionThread clientSession,String msg) {
         logMessage(msg);
         clientSession.sendMessage("echo: " + msg);
     }
 
-    private void processUnauthorizedUserMessage(String msg) {
+    private void processUnauthorizedUserMessage(ClientSessionThread clientSession,String msg) {
         String[] arr = msg.split(MessageLibrary.DELIMITER);
         if (arr.length < 4 ||
                 !arr[0].equals(MessageLibrary.AUTH_METHOD) ||

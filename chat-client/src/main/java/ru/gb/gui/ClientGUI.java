@@ -38,7 +38,7 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
 
     private final JList<String> listUsers = new JList<>();
     private SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
-    private MessageSocketThread socketThread;
+    private MessageSocketThread messageSocketThread;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
@@ -106,13 +106,17 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
             Socket socket = null;
             try {
                 socket = new Socket(ipAddressField.getText(), Integer.parseInt(portField.getText()));
-                socketThread = new MessageSocketThread(this, "Client" + loginField.getText(), socket);
+                messageSocketThread = new MessageSocketThread(this, generateUID(), socket);
             } catch (IOException ioException) {
                 showError(ioException.getMessage());
             }
         } else {
             throw new RuntimeException("Unsupported action: " + src.getClass());
         }
+    }
+
+    private String generateUID(){
+        return java.util.UUID.randomUUID().toString();
     }
 
     @Override
@@ -134,7 +138,7 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
         putMessageInChat(user,msg);
         messageField.setText("");
         messageField.grabFocus();
-        socketThread.sendMessage(msg);
+        messageSocketThread.sendMessage(msg);
     }
 
     private void putMessageInChat(String user, String msg) {
@@ -170,7 +174,7 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
     public void onSocketReady() {
         panelTop.setVisible(false);
         panelBottom.setVisible(true);
-        socketThread.sendMessage(MessageLibrary.getAuthRequestMessage(loginField.getText(), new String(passwordField.getPassword())));
+        messageSocketThread.sendMessage(MessageLibrary.getAuthRequestMessage(loginField.getText(), new String(passwordField.getPassword())));
     }
 
     @Override

@@ -46,7 +46,7 @@ public class MessageSocketThread extends Thread {
                 return;
             }
             if (!isClosed) {
-                out.writeUTF(message);
+                out.writeUTF(getName()+":"+message);
             }
         } catch (IOException e) {
             close();

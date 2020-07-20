@@ -3,9 +3,10 @@ package ru.gb.core;
 import ru.gb.chat.common.MessageLibrary;
 import ru.gb.net.MessageSocketThreadListener;
 import ru.gb.net.MessageSocketThread;
+
 import java.net.Socket;
 
-public class ClientSessionThread extends MessageSocketThread{
+public class ClientSessionThread extends MessageSocketThread {
     private boolean isAuthorized = false;
     private String nickname;
 
