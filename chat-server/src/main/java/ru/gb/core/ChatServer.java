@@ -1,6 +1,7 @@
 package ru.gb.core;
 
 import ru.gb.chat.common.MessageLibrary;
+import ru.gb.database.DatabaseCore;
 import ru.gb.net.MessageSocketThread;
 import ru.gb.net.MessageSocketThreadListener;
 import ru.gb.net.ServerSocketThread;
@@ -27,7 +28,7 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
         serverSocketThread = new ServerSocketThread(this,"Chat-Server-Socket-Thread", port, 2000);
         serverSocketThread.start();
         authController = new AuthController();
-        authController.init();
+        //authController.init();
     }
 
     public void stop() {
@@ -87,17 +88,29 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
         } else {
             processUnauthorizedUserMessage(clientSession, msg);
         }
-
-
     }
 
     private void processAuthorizedUserMessage(String msg) {
         logMessage(msg);
-        for (ClientSessionThread client : clients) {
-            if (!client.isAuthorized()) {
-                continue;
+        String[] arr = msg.split(MessageLibrary.DELIMITER);
+        if(arr.length==3 && arr[0].equals(MessageLibrary.CHANGE_NICKNAME_METHOD)){
+            //замена никнейма пользователем
+            for (ClientSessionThread client : clients) {
+                if(client.getNickname().equals(arr[1]) && DatabaseCore.changeNickname(arr[1],arr[2])){
+                    client.setNickname(arr[2]);
+                    client.sendMessage(MessageLibrary.getChangeNicknameMessage(arr[1],arr[2]));
+                    sendToAllAuthorizedClients(MessageLibrary.getUserList(getUsersList()));
+                    sendToAllAuthorizedClients(MessageLibrary.getBroadcastMessage("server", "Пользователь "+arr[1]+" поменял Никнейм на "+arr[2]));
+                }
             }
-            client.sendMessage(msg);
+        } else {
+            //рассылка сообщения всем пользователем
+            for (ClientSessionThread client : clients) {
+                if (!client.isAuthorized()) {
+                    continue;
+                }
+                client.sendMessage(msg);
+            }
         }
     }
 

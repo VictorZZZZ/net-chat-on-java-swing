@@ -17,7 +17,8 @@ public class MessageLibrary {
         TYPE_BROADCAST,
         TYPE_BROADCAST_CLIENT,
         MSG_FORMAT_ERROR,
-        USER_LIST
+        USER_LIST,
+        CHANGED_NICKNAME
     }
 
     public static final String DELIMITER = "##";
@@ -33,6 +34,8 @@ public class MessageLibrary {
 
     public static final String TYPE_BROADCAST_CLIENT = "/client_msg";
     public static final String USER_LIST = "/user_list";
+
+    public static final String CHANGE_NICKNAME_METHOD = "/change_nickname";
 
     public static String getAuthRequestMessage(String login, String password) {
         return AUTH_METHOD + DELIMITER + AUTH_REQUEST + DELIMITER + login + DELIMITER + password;
@@ -63,6 +66,10 @@ public class MessageLibrary {
         return USER_LIST + DELIMITER + users;
     }
 
+    public static String getChangeNicknameMessage(String nickname, String newNickname) {
+        return CHANGE_NICKNAME_METHOD + DELIMITER + nickname + DELIMITER + newNickname;
+    }
+
     public static MESSAGE_TYPE getMessageType(String msg) {
         String[] arr = msg.split(DELIMITER);
         if (arr.length < 2) {
@@ -86,6 +93,8 @@ public class MessageLibrary {
                 return MESSAGE_TYPE.MSG_FORMAT_ERROR;
             case USER_LIST:
                 return MESSAGE_TYPE.USER_LIST;
+            case CHANGE_NICKNAME_METHOD:
+                return MESSAGE_TYPE.CHANGED_NICKNAME;
             default:
                 return MESSAGE_TYPE.UNKNOWN;
         }

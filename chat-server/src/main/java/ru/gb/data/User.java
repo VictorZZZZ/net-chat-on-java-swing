@@ -22,4 +22,13 @@ public class User {
     public boolean isPasswordCorrect(String password) {
         return this.password.equals(password);
     }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "login='" + login + '\'' +
+                ", password='" + password + '\'' +
+                ", nickname='" + nickname + '\'' +
+                '}';
+    }
 }
