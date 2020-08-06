@@ -26,19 +26,28 @@ public class DatabaseCore {
 
         try {
             connect();
-            String query = "UPDATE users SET nickname='"+newNickname+"' WHERE nickname='"+nickname+"'";
-            return statement.executeUpdate(query)>0;
+            String query = "UPDATE users SET nickname=? WHERE nickname=?";
+            PreparedStatement preparedStatement=connection.prepareStatement(query);
+            preparedStatement.setString(1,newNickname);
+            preparedStatement.setString(2,nickname);
+            boolean result = preparedStatement.executeUpdate()>0;
+            disconnect();
+            return result;
         } catch (Exception e) {
             e.printStackTrace();
+            disconnect();
             return false;
         }
+        
 
     }
 
     public static User getUserByLogin(String login) throws SQLException, ClassNotFoundException {
         connect();
-        String query = "SELECT * FROM users WHERE login='"+login+"'";
-        ResultSet rs = statement.executeQuery(query);
+        String query = "SELECT * FROM users WHERE login=?";
+        PreparedStatement preparedStatement = connection.prepareStatement(query);
+        preparedStatement.setString(1,login);
+        ResultSet rs = preparedStatement.executeQuery();
         if (rs.next()) {
             String userLogin = rs.getString("login");
             String userNickname = rs.getString("nickname");
