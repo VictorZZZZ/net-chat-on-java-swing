@@ -20,11 +20,11 @@ import java.util.Calendar;
 public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtExceptionHandler, MessageSocketThreadListener {
     private static final int WIDTH = 800;
     private static final int HEIGHT = 600;
-    private static final int POS_X = 500;
+    private static final int POS_X = 400;
     private static final int POS_Y = 200;
 
     private final JTextArea chatArea = new JTextArea();
-    private final JPanel panelTop = new JPanel(new GridLayout(2, 3));
+    private final JPanel panelTop = new JPanel();
     private final JTextField ipAddressField = new JTextField("127.0.0.1");
     private final JTextField portField = new JTextField("8181");
     private final JCheckBox cbAlwaysOnTop = new JCheckBox("Always on top", true);
@@ -42,6 +42,12 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
     private MessageSocketThread socketThread;
     private final String WINDOW_TITLE = "Chat Client";
     private String nickname;
+
+    private final JPanel panelSettings = new JPanel(new BorderLayout());
+    private final JTextField fieldChangeNickname = new JTextField("new Nickname");
+    private final JButton buttonChangeNickname = new JButton("<html><b>Change Nickname</b></html>");
+
+    private final JPanel panelConnection = new JPanel(new GridLayout(2,3));
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
@@ -72,27 +78,42 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
         chatArea.setWrapStyleWord(true);
         chatArea.setEditable(false);
         //North
-        panelTop.add(ipAddressField);
-        panelTop.add(portField);
-        panelTop.add(cbAlwaysOnTop);
-        panelTop.add(loginField);
-        panelTop.add(passwordField);
-        panelTop.add(buttonLogin);
+
+        panelSettings.add(fieldChangeNickname,BorderLayout.CENTER);
+        panelSettings.add(buttonChangeNickname,BorderLayout.EAST);
+        panelSettings.setVisible(false);
+
+        panelConnection.add(ipAddressField);
+        panelConnection.add(portField);
+        panelConnection.add(cbAlwaysOnTop);
+        panelConnection.add(loginField);
+        panelConnection.add(passwordField);
+        panelConnection.add(buttonLogin);
+
+        panelTop.setLayout(new BoxLayout(panelTop, BoxLayout.Y_AXIS));
+        panelTop.add(panelSettings);
+        panelTop.add(panelConnection);
+
+
 
         //South
         panelBottom.add(buttonDisconnect,BorderLayout.WEST);
         panelBottom.add(messageField,BorderLayout.CENTER);
         panelBottom.add(buttonSend,BorderLayout.EAST);
 
+        //add(panelSettings);
         add(scrollPaneUsers, BorderLayout.EAST);
         add(scrollPaneChatArea, BorderLayout.CENTER);
         add(panelTop, BorderLayout.NORTH);
         add(panelBottom,BorderLayout.SOUTH);
 
+
         cbAlwaysOnTop.addActionListener(this::actionPerformed);
         buttonSend.addActionListener(this::actionPerformed);
         messageField.addActionListener(this::actionPerformed);
         buttonLogin.addActionListener(this::actionPerformed);
+        buttonDisconnect.addActionListener(this::actionPerformed);
+        buttonChangeNickname.addActionListener(this::actionPerformed);
 
         setVisible(true);
 
@@ -113,11 +134,17 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
             } catch (IOException ioException) {
                 showError(ioException.getMessage());
             }
-        } else if (src == buttonDisconnect) {
+        } else if(src == buttonDisconnect) {
             socketThread.close();
+        }else if(src==buttonChangeNickname){
+            changeNickname(fieldChangeNickname.getText());
         }else {
             throw new RuntimeException("Unsupported action: " + src.getClass());
         }
+    }
+
+    private void changeNickname(String newNickname) {
+        socketThread.sendMessage(MessageLibrary.getChangeNicknameMessage(nickname, newNickname));
     }
 
     @Override
@@ -172,14 +199,18 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
 
     @Override
     public void onSocketReady(MessageSocketThread thread) {
-        panelTop.setVisible(false);
+        panelConnection.setVisible(false);
+        panelSettings.setVisible(true);
+
         panelBottom.setVisible(true);
         socketThread.sendMessage(MessageLibrary.getAuthRequestMessage(loginField.getText(), new String(passwordField.getPassword())));
     }
 
     @Override
     public void onSocketClosed(MessageSocketThread thread) {
-        panelTop.setVisible(true);
+        panelSettings.setVisible(false);
+        panelConnection.setVisible(true);
+
         panelBottom.setVisible(false);
     }
 
@@ -188,7 +219,8 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
         switch (MessageLibrary.getMessageType(msg)) {
             case AUTH_ACCEPT:
                 this.nickname = values[2];
-                setTitle(WINDOW_TITLE + " authorized with nickname: " + this.nickname);
+                setNicknameInTitle();
+                fieldChangeNickname.setText(this.nickname);
                 break;
             case AUTH_DENIED:
                 putMessageInChatArea("server", msg);
@@ -216,9 +248,17 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
                 }
                 putMessageInChatArea(srcNickname, values[2]);
                 break;
+            case CHANGED_NICKNAME:
+                nickname=values[2];
+                setNicknameInTitle();
+                break;
             default:
                 throw new RuntimeException("Unknown message: " + msg);
 
         }
+    }
+
+    private void setNicknameInTitle() {
+        setTitle(WINDOW_TITLE + " authorized with nickname: " + nickname);
     }
 }
