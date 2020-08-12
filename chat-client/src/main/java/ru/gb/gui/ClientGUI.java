@@ -8,11 +8,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -48,6 +48,7 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
     private final JButton buttonChangeNickname = new JButton("<html><b>Change Nickname</b></html>");
 
     private final JPanel panelConnection = new JPanel(new GridLayout(2,3));
+    private String historyFile;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
@@ -136,6 +137,7 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
             }
         } else if(src == buttonDisconnect) {
             socketThread.close();
+            chatArea.setText("");
         }else if(src==buttonChangeNickname){
             changeNickname(fieldChangeNickname.getText());
         }else {
@@ -175,10 +177,12 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
     }
 
     private void putIntoFileHistory(String user, String msg) {
-        try (PrintWriter pw = new PrintWriter(new FileOutputStream(user + "-history.txt", true))) {
-            pw.print(msg);
-        } catch (FileNotFoundException e) {
-            showError(msg);
+        if(historyFile!=null) {
+            try (PrintWriter pw = new PrintWriter(new FileOutputStream(historyFile, true))) {
+                pw.print(msg);
+            } catch (FileNotFoundException e) {
+                showError(msg);
+            }
         }
     }
 
@@ -220,7 +224,9 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
             case AUTH_ACCEPT:
                 this.nickname = values[2];
                 setNicknameInTitle();
+                historyFile = nickname+"-history.txt";
                 fieldChangeNickname.setText(this.nickname);
+                showHistory();
                 break;
             case AUTH_DENIED:
                 putMessageInChatArea("server", msg);
@@ -256,6 +262,35 @@ public class ClientGUI extends JFrame implements ActionListener,Thread.UncaughtE
                 throw new RuntimeException("Unknown message: " + msg);
 
         }
+    }
+
+    private void showHistory() {
+        Path path = Paths.get(historyFile);
+        try {
+            long lineCount = Files.lines(path).count();
+            if(lineCount<100){
+                BufferedReader reader = new BufferedReader(new FileReader(historyFile));
+                String str;
+                while ((str = reader.readLine()) !=null ) {
+                    chatArea.append(str+"\n");
+                }
+                reader.close();
+            } else {
+                BufferedReader reader = new BufferedReader(new FileReader(historyFile));
+                long counter=0;
+                String str;
+                while ((str = reader.readLine()) !=null ) {
+                    counter++;
+                    if(counter>lineCount-100){
+                        chatArea.append(str+"\n");
+                    }
+                }
+                reader.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     private void setNicknameInTitle() {
