@@ -1,5 +1,7 @@
 package ru.gb.core;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.gb.data.User;
 import ru.gb.database.DatabaseCore;
 
@@ -8,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class AuthController {
+    public static final Logger logger = LogManager.getLogger(AuthController.class);
 
     HashMap<String, User> users = new HashMap<>();
 
@@ -24,8 +27,10 @@ public class AuthController {
         try {
             user = DatabaseCore.getUserByLogin(login);
             if (user != null && user.isPasswordCorrect(password)) {
+                logger.info("Пользователь {} найден. Пароль соответствует.",user.getNickname());
                 return user.getNickname();
             }
+            logger.warn("Пользователь {} не найден или пароль не соответствует.",user.getNickname());
             return null;
         } catch (Exception e) {
             e.printStackTrace();
