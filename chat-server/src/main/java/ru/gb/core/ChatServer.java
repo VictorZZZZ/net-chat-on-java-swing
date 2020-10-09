@@ -1,5 +1,8 @@
 package ru.gb.core;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import ru.gb.chat.common.MessageLibrary;
 import ru.gb.database.DatabaseCore;
 import ru.gb.net.MessageSocketThread;
@@ -12,6 +15,8 @@ import java.util.ArrayList;
 import java.util.Vector;
 
 public class ChatServer implements ServerSocketThreadListener, MessageSocketThreadListener {
+    private static final Logger logger = LogManager.getLogger(ChatServer.class);
+
     private ServerSocketThread serverSocketThread;
     private ChatServerListener listener;
     private AuthController authController;
@@ -28,6 +33,7 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
         serverSocketThread = new ServerSocketThread(this,"Chat-Server-Socket-Thread", port, 2000);
         serverSocketThread.start();
         authController = new AuthController();
+        logger.info("Сервер запущен");
         //authController.init();
     }
 
@@ -37,6 +43,7 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
         }
         serverSocketThread.interrupt();
         disconnectAll();
+        logger.info("Сервер остановлен");
     }
 
     @Override
@@ -66,13 +73,13 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
 
     @Override
     public void onSocketReady(MessageSocketThread thread) {
-        logMessage("Socket ready");
+        logger.info("Socket ready");
     }
 
     @Override
     public void onSocketClosed(MessageSocketThread thread) {
         ClientSessionThread clientSession = (ClientSessionThread) thread;
-        logMessage("Socket Closed");
+        logger.info("Socket Closed");
         clients.remove(thread);
         if (clientSession.isAuthorized() && !clientSession.isReconnected()) {
             sendToAllAuthorizedClients(MessageLibrary.getBroadcastMessage("server", "User " + clientSession.getNickname() + " disconnected"));
@@ -115,6 +122,7 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
     }
 
     private void sendToAllAuthorizedClients(String msg) {
+        logger.info("Рассылка сообщения:{}",msg);
         for (ClientSessionThread client : clients) {
             if(!client.isAuthorized()) {
                 continue;
@@ -129,6 +137,7 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
                 !arr[0].equals(MessageLibrary.AUTH_METHOD) ||
                 !arr[1].equals(MessageLibrary.AUTH_REQUEST)) {
             clientSession.authError("Incorrect request: " + msg);
+            logger.warn("Incorrect request: {}",msg);
             return;
         }
         String login = arr[2];
@@ -179,6 +188,7 @@ public class ChatServer implements ServerSocketThreadListener, MessageSocketThre
             client.close();
             clients.remove(client);
         }
+        logger.info("Все клиенты отключены");
     }
 
     private void logMessage(String msg) {

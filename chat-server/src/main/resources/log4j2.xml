@@ -1,0 +1,24 @@
+<Configuration>
+    <Properties>
+        <Property name="logsPath">logs</Property>
+    </Properties>
+    <Appenders>
+        <Console name="stdout" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss,SSS} %-5level ${PID:- } --- [%t] %-40.40logger{39} : %n%m%throwable"/>
+        </Console>
+        <RollingFile name="rollingFile" fileName="${logsPath}/chat-server.log" filePattern="${logsPath}/chat-server-rolling-%d{MM-dd-yy}.log.gz">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss,SSS} %-5level ${PID:- } --- [%t] %-40.40logger{39} : %m%n%throwable"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="1M"/>
+            </Policies>
+        </RollingFile>
+    </Appenders>
+    <Loggers>
+        <Root level="INFO" additivity="true">
+            <AppenderRef ref="stdout"/>
+        </Root>
+        <Logger name="ru.gb.core" level="INFO" additivity="true">
+            <AppenderRef ref="rollingFile"/>
+        </Logger>
+    </Loggers>
+</Configuration>
